@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VisualStudioUserFile ProjectCreator="Intel Fortran" Keyword="Application" Version="11.0" ProjectIdGuid="{EBF17472-B6CE-4D72-9356-4B01222B27AD}">
+	<Configurations>
+		<Configuration Name="Debug|Win32"/>
+		<Configuration Name="Release|Win32"/>
+		<Configuration Name="Debug|x64" Command="p:\Chemical Engineering\Air_Quality_Eng_R_Team\!GITHUB\fds\Build\impi_intel_win_64_db\fds_impi_win_64_db.exe" CommandArguments="&quot;p:\Chemical Engineering\Air_Quality_Eng_R_Team\!GITHUB\fds\Verification\Extinction\extinction.fds&quot;"/>
+		<Configuration Name="Release|x64"/></Configurations></VisualStudioUserFile>
