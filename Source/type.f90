@@ -699,19 +699,12 @@ TYPE HUMAN_TYPE
    REAL(EB) :: SumForces=0._EB, IntDose=0._EB, DoseCrit1=0._EB, DoseCrit2=0._EB, SumForces2=0._EB
    REAL(EB) :: TempMax1=0._EB, FluxMax1=0._EB, TempMax2=0._EB, FluxMax2=0._EB, Density=0._EB, DensityR=0._EB, DensityL=0._EB
    REAL(EB) :: P_detect_tot=0._EB, v0_fac=1._EB, D_Walls=0._EB
-   
-   REAL(EB) :: Toxic_Load=0._EB ! Cumulative Toxic Load Value
-   
    REAL(EB) :: T_FallenDown=0._EB, F_FallDown=0._EB, Angle_FallenDown=0._EB, SizeFac_FallenDown=0._EB, T_CheckFallDown=0._EB
    INTEGER  :: IOR=-1, ILABEL=0, COLOR_INDEX=0, INODE=0, IMESH=-1, IPC=0, IEL=0, I_FFIELD=0, I_Target2=0, ID_CB=-1
    INTEGER  :: GROUP_ID=0, DETECT1=0, GROUP_SIZE=0, I_Target=0, I_DoorAlgo=0, I_Door_Mode=0, STRS_Direction = 1
    INTEGER  :: STR_SUB_INDX, SKIP_WALL_FORCE_IOR
    LOGICAL  :: SHOW=.TRUE., NewRnd=.TRUE., CROWBAR_READ_IN=.FALSE., CROWBAR_UPDATE_V0=.FALSE.
    LOGICAL  :: SeeDoorXB1=.FALSE., SeeDoorXB2=.FALSE., SeeDoorXYZ1=.FALSE., SeeDoorXYZ2=.FALSE.
-   
-   REAL(EB) :: ToxicLoad(1:3) = 0._EB ! Toxic Load Array for symptom onset
-   REAL(EB) :: TL_Rate = 0._EB ! Toxic Load Rate
-   
 END TYPE HUMAN_TYPE
 
 TYPE HUMAN_GRID_TYPE
@@ -719,9 +712,6 @@ TYPE HUMAN_GRID_TYPE
 ! SOOT_DENS: Smoke density at the center of the cell (mg/m3)
 ! FED_CO_CO2_O2: Purser's FED for co, co2, and o2
    REAL(EB) :: X,Y,Z,SOOT_DENS,FED_CO_CO2_O2,TMP_G,RADFLUX
-   
-   REAL(EB) :: H2S_Conc ! Hydrogen sulfide concentration at the center of the cell (mg/m3)
-   
    INTEGER :: N, N_old, IGRID, IHUMAN, ILABEL
 ! IMESH: (x,y,z) which fire mesh, if any
 ! II,JJ,KK: Fire mesh cell reference

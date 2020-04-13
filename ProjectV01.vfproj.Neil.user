@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<VisualStudioUserFile ProjectCreator="Intel Fortran" Keyword="Application" Version="11.0" ProjectIdGuid="{F9062160-B812-4FBE-850E-2EC4004183D6}">
-	<Configurations>
-		<Configuration Name="Debug|Win32" Command="C:\Users\Neil\Documents\MSc CHEN\THESIS\Simulation Work\GithubRepo\Build\impi_intel_win_64_db\fds_impi_win_64_db.exe" CommandArguments="C:\Users\Neil\Documents\&quot;MSc CHEN&quot;\THESIS\&quot;Simulation Work&quot;\&quot;FDS Trials&quot;\CaseStudy2\CaseStudy2_v01_Setup\CaseStudy2.fds" WorkingDirectory="C:\Users\Neil\Documents\MSc CHEN\THESIS\Simulation Work\FDS Trials\CaseStudy2\CaseStudy2_v01_Setup"/>
-		<Configuration Name="Release|Win32"/></Configurations></VisualStudioUserFile>

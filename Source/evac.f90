@@ -107,7 +107,7 @@ MODULE EVAC
   TYPE GROUP_TYPE
      REAL(EB) :: GROUP_X=0._EB, GROUP_Y=0._EB, MAX_DIST_CENTER=0._EB, LIMIT_COMP=0._EB
      REAL(EB) :: GROUP_EFF=0._EB, RADIUS_COMPLETE_0=0._EB, RADIUS_COMPLETE_1=0._EB
-     REAL(EB) :: Speed=0._EB, IntDose=0._EB, Tpre=0._EB, Tdoor=0._EB, Tdet=0._EB, Toxic_Load=0._EB
+     REAL(EB) :: Speed=0._EB, IntDose=0._EB, Tpre=0._EB, Tdoor=0._EB, Tdet=0._EB
      INTEGER :: GROUP_SIZE=0, GROUP_ID=0, COMPLETE=0, IEL=0, Avatar_Color_Index=0
      INTEGER, DIMENSION(3) :: AVATAR_RGB=-1
      INTEGER, POINTER, DIMENSION(:) :: GROUP_I_FFIELDS =>NULL()
@@ -477,7 +477,7 @@ CONTAINS
          WIDTH2, EFF_WIDTH, EFF_LENGTH, FAC_SPEED, TIME_OPEN, TIME_CLOSE
     REAL(EB) :: UBAR0, VBAR0, TIME_DELAY, TRAVEL_TIME
     LOGICAL :: CHECK_FLOW, COUNT_ONLY, AFTER_REACTION_TIME, EXIT_SIGN, KEEP_XY, USE_V0, SHOW, COUNT_DENSITY, GLOBAL
-    LOGICAL :: OUTPUT_SPEED, OUTPUT_MOTIVE_FORCE, OUTPUT_FED, OUTPUT_OMEGA, OUTPUT_DENSITY, OUTPUT_ANGLE, OUTPUT_TOXICLOAD, &
+    LOGICAL :: OUTPUT_SPEED, OUTPUT_MOTIVE_FORCE, OUTPUT_FED, OUTPUT_OMEGA, OUTPUT_DENSITY, OUTPUT_ANGLE, &
          OUTPUT_CONTACT_FORCE, OUTPUT_TOTAL_FORCE, OUTPUT_MOTIVE_ANGLE, OUTPUT_ACCELERATION, OUTPUT_NERVOUSNESS, &
          LOCKED_WHEN_CLOSED, TARGET_WHEN_CLOSED, WAIT_AT_XYZ, ELEVATOR, EVAC_FDS6, KNOWN_DOOR
     !Issue1547: Added new output keyword for the PERS namelist, here is the definition
@@ -560,7 +560,7 @@ CONTAINS
          TDET_SMOKE_DENS, DENS_INIT, EVAC_DT_MAX, EVAC_DT_MIN, &
          D_TORSO_MEAN, D_SHOULDER_MEAN, TAU_ROT, M_INERTIA, &
          FC_DAMPING, V_MAX, V_ANGULAR_MAX, V_ANGULAR, &
-         OUTPUT_SPEED, OUTPUT_MOTIVE_FORCE, OUTPUT_FED, OUTPUT_OMEGA, OUTPUT_DENSITY, OUTPUT_TOXICLOAD, &
+         OUTPUT_SPEED, OUTPUT_MOTIVE_FORCE, OUTPUT_FED, OUTPUT_OMEGA, OUTPUT_DENSITY, &
          OUTPUT_MOTIVE_ANGLE, OUTPUT_ANGLE, OUTPUT_CONTACT_FORCE, OUTPUT_TOTAL_FORCE, &
          OUTPUT_ACCELERATION, OUTPUT_NERVOUSNESS, COLOR_INDEX, DEAD_RGB, DEAD_COLOR, &
          SMOKE_MIN_SPEED, SMOKE_MIN_SPEED_FACTOR, SMOKE_MIN_SPEED_VISIBILITY, &
@@ -1552,7 +1552,6 @@ CONTAINS
       OUTPUT_CONTACT_FORCE = .FALSE.
       OUTPUT_TOTAL_FORCE   = .FALSE.
       OUTPUT_NERVOUSNESS   = .FALSE.
-      OUTPUT_TOXICLOAD     = .FALSE. ! Part of OPERATION HYDRA Mk III.
       DISCARD_SMOKE_INFO   = .FALSE. ! Set true in input file for debug purposes only
       !Issue1547: This subroutine reads the PERS namelists. All the namelist entries should
       !Issue1547: have some default values that are used if no value is given in the input.
@@ -2114,7 +2113,6 @@ CONTAINS
       IF (OUTPUT_TOTAL_FORCE) EVAC_N_QUANTITIES = EVAC_N_QUANTITIES + 1
       !Issue1547: Add the counter of the special quantities that are stored in the .prt5 files.
       IF (OUTPUT_NERVOUSNESS) EVAC_N_QUANTITIES = EVAC_N_QUANTITIES + 1
-      IF (OUTPUT_TOXICLOAD) EVAC_N_QUANTITIES = EVAC_N_QUANTITIES + 1 ! Part of OPERATION HYDRA Mk III.
 
       IF (EVAC_N_QUANTITIES > 0) THEN
          ALLOCATE(EVAC_QUANTITIES_INDEX(EVAC_N_QUANTITIES),STAT=IZERO)
@@ -2168,11 +2166,6 @@ CONTAINS
             EVAC_QUANTITIES_INDEX(n)=250
             n = n + 1
          END IF
-         IF (OUTPUT_TOXICLOAD) THEN
-             EVAC_QUANTITIES_INDEX(n)=525 ! Part of OPERATION HYDRA Mk III.
-             n = n + 1
-         END IF
-         
 
          IF ( n-1 /= EVAC_N_QUANTITIES ) THEN
             WRITE(MESSAGE,'(A,2I4,A)') 'ERROR: Evac output quantities ',EVAC_N_QUANTITIES,n-1, ' Some bug in the program.'
@@ -6028,7 +6021,6 @@ CONTAINS
           HUMAN_GRID(i,j)%Z = z1
           HUMAN_GRID(i,j)%SOOT_DENS     = 0.0_EB
           HUMAN_GRID(i,j)%FED_CO_CO2_O2 = 0.0_EB
-          HUMAN_GRID(i,j)%H2S_Conc = 0.0_EB ! Define H2S concentration at a specific location in the evacuation grid
           HUMAN_GRID(i,j)%TMP_G         = 0.0_EB
           HUMAN_GRID(i,j)%RADFLUX        = 0.0_EB
           HUMAN_GRID(i,j)%IMESH         = 0
@@ -6537,9 +6529,6 @@ CONTAINS
              HR%SumForces = 0.0_EB
              HR%SumForces2 = 0.0_EB
              HR%IntDose   = 0.0_EB
-             HR%Toxic_Load = 0.0_EB ! Define initial Cumulative Toxic Load
-             HR%ToxicLoad = 0.0_EB ! Define initial Cumulative Toxic Load Array (3)
-             HR%TL_Rate = 0.0_EB ! Define initial Toxic Load rate
              HR%Eta       = 0.0_EB
              HR%Ksi       = 0.0_EB
              HR%NewRnd    = .TRUE.
@@ -7270,7 +7259,7 @@ CONTAINS
     IF (BTEST(I_MODE,3) .OR. BTEST(I_MODE,1)) EVAC_DEVICES(:)%USE_NOW = .FALSE.
 
   END SUBROUTINE CLEAN_AFTER_EVACUATE
-    !
+!
   SUBROUTINE EVACUATE_HUMANS(TIN,DT,NM,ICYC)
     IMPLICIT NONE
     !
@@ -7349,39 +7338,6 @@ CONTAINS
     LOGICAL :: L_DO_GAME, L_FALLEN_DOWN, L_HRE_FALLEN_DOWN, L_FALLDOWN_THIS_TIME_STEP
     !Issue1547: Some variables that are needed
     REAL(EB) :: Eta_Nervous, Speed_Nervous, HR_Speed
-    
-    ! ================================================================================================================
-    ! OPERATION HYDRA - Required variables for AEGL Table generation and Toxic Load calculation.
-    
-    ! In general, (b) acts as an index for each of the 6 bands that exist between specified onset times, allowing for
-    ! interpolations and short extrapolations.
-    ! ================================================================================================================
-    
-    INTEGER :: b, k ! Indices
-    REAL(EB) :: HGConc ! Placeholder for concentration
-    
-    ! REAL(EB) :: ToxicLoad(3) ! MUST BE UNIQUE PER INDIVIDUAL AGENT
-    REAL(EB) :: Arho(5,3) ! Arho(b,k) - Toxic gas density (b) that leads to the onset of each AEGL symptom (k).
-    REAL(EB) :: Brho (0:6,3), Alpha(6,3), rhomax(3), rhomin(3)
-    ! Brho(b,k) - an expansion of the generated table of symptom onset times for computational efficiency.
-    ! Alpha(b,k) - the array corresponding to elements in Brho(b,k) to interpolate within the Brho table.
-    ! rhomax(k), rhomin(k) - the maximum and minimum value of the gas density at each AEGL symptom onset, respectively.
-    !                        For densities larger than rhomax, TL_Rate = 1/taumin.
-    !                                      smaller than rhomax, TL_Rate = 0.
-    
-    REAL(EB) :: Atime(5), Btime(0:6,3)
-    ! Atime(b) - AEGL exposure times (pre-defined). In minutes, [0.17 0.83 1.67 4.17 8.33].
-    ! Btime(b,k) - expansion of table for computational efficiency.
-    
-    REAL(EB) :: taumin, taumax ! Used for densities falling outside the given range. These define the minimum
-                               ! exposure time over which any AEGL symptom can be reached, as well as an upper limit of
-                               ! exposure time that determines the slowest rate of Toxic Load accumulation before the rate is
-                               ! then set to zero.
-    
-    REAL(EB) :: cmin, cmax ! Values stored within each AEGL symptom band that correspond to the minimum and maximum
-                           ! concentrations in that specific range. Used to determine the AEGL band which the current
-                           ! concentration lies within.
-    
 
     TYPE (MESH_TYPE),        POINTER :: MFF=>NULL()
     TYPE (EVAC_STRS_TYPE),   POINTER :: STRP=>NULL()
@@ -7555,7 +7511,6 @@ CONTAINS
        GROUP_LIST(:)%MAX_DIST_CENTER = 0.0_EB
        GROUP_LIST(:)%SPEED           = 0.0_EB
        GROUP_LIST(:)%INTDOSE         = 0.0_EB
-       GROUP_LIST(:)%Toxic_Load      = 0.0_EB
        GROUP_LIST(:)%TPRE            = 0.0_EB
        GROUP_LIST(:)%TDET            = HUGE(GROUP_LIST(:)%TDET)
        !
@@ -7572,7 +7527,6 @@ CONTAINS
           GROUP_LIST(J)%GROUP_Y    = GROUP_LIST(J)%GROUP_Y + HR%Y
           GROUP_LIST(J)%SPEED      = GROUP_LIST(J)%SPEED + HR%SPEED
           GROUP_LIST(J)%INTDOSE    = GROUP_LIST(J)%INTDOSE + HR%INTDOSE
-          GROUP_LIST(J)%Toxic_Load = GROUP_LIST(j)%Toxic_Load + HR%Toxic_Load
           GROUP_LIST(J)%TPRE       = MAX(GROUP_LIST(J)%TPRE,HR%TPRE)
           GROUP_LIST(J)%TDET       = MIN(GROUP_LIST(J)%TDET,HR%TDET)
           I_TMP = HR%I_TARGET
@@ -7595,7 +7549,6 @@ CONTAINS
        GROUP_LIST(1:)%GROUP_Y = GROUP_LIST(1:)%GROUP_Y / MAX(1,GROUP_LIST(1:)%GROUP_SIZE)
        GROUP_LIST(1:)%SPEED   = GROUP_LIST(1:)%SPEED   / MAX(1,GROUP_LIST(1:)%GROUP_SIZE)
        GROUP_LIST(1:)%INTDOSE = GROUP_LIST(1:)%INTDOSE / MAX(1,GROUP_LIST(1:)%GROUP_SIZE)
-       GROUP_LIST(1:)%Toxic_Load = GROUP_LIST(1:)%Toxic_Load / MAX(1,GROUP_LIST(1:)%GROUP_SIZE)
        GROUP_LIST(:)%MAX_DIST_CENTER = 0.0_EB
 
        ! GROUP_LIST intitialization and count the number of agents going towards different doors/exits.
@@ -7637,7 +7590,6 @@ CONTAINS
           GROUP_LIST(0)%GROUP_Y    = 0.5_EB*(YS+YF)
           GROUP_LIST(0)%SPEED      = 1.0_EB
           GROUP_LIST(0)%INTDOSE    = 0.0_EB
-          GROUP_LIST(0)%Toxic_Load = 0.0_EB
           GROUP_LIST(0)%MAX_DIST_CENTER = 0.0_EB
        END IF
 
@@ -8055,159 +8007,10 @@ CONTAINS
        ! (The 'dissipative' self-driving force contribution to the velocities is updated self-consistently,
        ! but the other terms are not.)
        ! ========================================================
-       
        D_HUMANS_MIN = HUGE(D_HUMANS_MIN)
        D_WALLS_MIN  = HUGE(D_WALLS_MIN)
        IF (C_HAWK >= 0.0_EB) N_HawkDoveCount(:,I_EGRID) = 0
 
-       ! ========================================================
-       ! Initialise toxic load parameters
-       ! For now (17/09/19), the gas densities will be defined explicitly and not on a case-by-case basis.
-       ! Minutes will be used for AEGL value arrays, which will be converted into seconds for intermediate calculations.
-       ! ========================================================
-       
-       Atime = (/0.17_EB, 0.83_EB, 1.67_EB, 4.17_EB, 8.33_EB/) ! FINAL VALUE AS OF NOVEMBER 20
-       ! AEGL Time in minutes, corresponding to 10, 50, 100, 250, 500 seconds 
-       
-       ! November 05, 2019: CHANGED TO HYDROGEN SULFIDE VALUES.
-       
-       ! Atime = (/600._EB, 1800._EB, 3600._EB, 14400._EB, 28800._EB/) ! Time in seconds
-       
-       ! AEGL densities for hydrogen sulfide in ppm
-       Arho(1:5,1) = (/4.85_EB, 4.23_EB, 4.17_EB, 4.06_EB, 3.82_EB/)
-       Arho(1:5,2) = (/180.79_EB, 157.56_EB, 155.43_EB, 151.37_EB, 142.48_EB/)
-       Arho(1:5,3) = (/485.62_EB, 423.22_EB, 417.49_EB, 406.59_EB, 382.71_EB/)
-       
-       ! November 05, 2019: CHANGED TO AEGL 1, 2, 3 CONCENTRATIONS.
-       ! ---THESE UNITS ARE IN MG/M3---
-       ! Arho(1:5,1) = (/1.063851913_EB, 0.851081531_EB, 0.723419301_EB, 0.510648918_EB, 0.468094842_EB/)
-       ! Arho(1:5,2) = (/58.15723794_EB, 45.39101498_EB, 38.29866889_EB, 28.36938436_EB, 24.113976718_EB/)
-       ! Arho(1:5,3) = (/107.8036606_EB, 83.68968386_EB, 70.9234609_EB, 52.48336106_EB, 43.97254576_EB/)
-       
-       ! In ppm
-       ! Arho(1:5,1) = (/0.75_EB, 0.6_EB, 0.51_EB, 0.36_EB, 0.33_EB/)
-       ! Arho(1:5,2) = (/41_EB, 32_EB, 27_EB, 20_EB, 17_EB/)
-       ! Arho(1:5,3) = (/76_EB, 59_EB, 50_EB, 37_EB, 31_EB/)
-       
-       Atime = Atime*60._EB ! Convert Atime to seconds - November 05, 2019: CHANGED AND REMOVED. 
-       ! - November 20, 2019: RETURNED.
-       
-       taumin = 1_EB ! Seconds - November 05, 2019: CHANGED FROM 30 to 200.
-       ! - November 20, 2019: CHANGED TO 0.1 (ARBITRARILY SMALL)
-       ! - February 18, 2020: CHANGED FROM 0.1 to 1. (ADJUSTED TO MAKE EXTRAPOLATION NOT CARRY OVER INTO LOWER EXPOSURES)
-       taumax = 100000._EB ! Seconds - November 20, 2019: CHANGED TO 1E6 (ARBITRARILY LARGE)
-       ! - February 18, 2020: CHANGED FROM 1E6 to 1E5. (ADJUSTED TO MAKE EXTRAPOLATION NOT CARRY OVER INTO HIGHER EXPOSURES)
-       
-       Brho = 0._EB
-       Alpha = 0._EB
-       rhomax = 0._EB
-       rhomin = 0._EB
-       Btime = 0._EB
-       HGConc = 0._EB
-       
-       ! Brho and Btime Loop
-       DO k = 1, 3
-           
-           DO b = 1, 5
-               
-               Brho(b,k) = Arho(b,k)
-               Btime(b,k) = Atime(b) ! Each AEGL starts the same
-           
-           END DO
-           
-           Btime(0,k) = taumin
-           Btime(6,k) = taumax
-           
-       END DO
-       
-       ! Alpha Loop
-       DO k = 1, 3
-           
-           DO b = 2, 5
-               
-               IF (Brho(b-1,k) == Brho(b,k)) THEN
-                   
-                   Alpha(b,k) = 0.0_EB
-                   
-               ELSE
-                   
-                   Alpha(b,k) = log(Atime(b)/Atime(b-1))/log(Brho(b-1,k)/Brho(b,k))
-                   
-               END IF
-               
-           END DO
-           
-           Alpha(1,k) = Alpha(2,k) ! Simple extrapolation to short times
-           Alpha(6,k) = Alpha(5,k) ! Simple extrapolation to long times
-           
-       END DO
-       
-       ! Extrapolating limits of AEGL table to corresponding taumax, taumin. Densities larger than rhomax
-       ! will result in a TL rate accumulation of 1.0/taumin which corresponds to the minimum effective
-       ! time (taumin). Densities lower than rhomax will result in a TL rate accumulation of zero.
-       DO k = 1, 3
-           
-           IF (Alpha(2,k) == 0.0_EB) THEN
-               
-               rhomax(k) = Brho(1,k)
-               Brho(0,k) = rhomax(k)
-               
-           ELSE
-               
-               rhomax(k) = Brho(1,k)*(Btime(1,k)/taumin)**(1.0_EB/Alpha(1,k))
-               Brho(0,k) = rhomax(k)
-               
-           END IF
-           
-           IF (Brho(4,k) == Brho(5,k)) THEN
-               
-               rhomin(k) = Brho(5,k)
-               Brho(6,k) = rhomin(k)
-               
-           ELSE
-               
-               rhomin(k) = Brho(5,k)*(Btime(5,k)/taumax)**(1.0_EB/Alpha(5,k))
-               Brho(6,k) = rhomin(k)
-               
-           END IF
-           
-       END DO
-       
-       ! Accounting for threshold values, which collapses times to the shortest time for which the threshold
-       ! applies.
-       
-       DO k = 1, 3
-           
-           DO b = 1, 6
-               
-               IF ( alpha(b,k) == 0.0_EB) THEN
-               
-               Btime(b,k) = Btime(b-1,k)
-               
-               END IF
-               
-           END DO
-           
-       END DO
-       
-       ! Accounting for upper threshold transitions.
-       
-       DO k = 1,3
-           
-           DO b = 2, 4
-               
-               IF (alpha(b-1,k) == 0.0_EB .AND. alpha(b,k) > 0.0_EB) THEN
-                   
-                   alpha(b,k) = log(Btime(b,k)/Btime(b-1,k))/log(Brho(b-1,k)/Brho(b,k))
-                   
-               END IF
-               
-           END DO
-           
-       END DO
-       
-               
-       
        EVAC_MOVE_LOOP: DO I=1, N_HUMANS
           HR=>HUMAN(I)
           IF (HR%IEL > 0) THEN
@@ -8342,8 +8145,6 @@ CONTAINS
           !
           HR%W = 0.0_EB
           SMOKE_SPEED_FAC = 1.0_EB
-                              
-          
           IF (.NOT.L_DEAD .AND. T >= HR%TDET) HR%DETECT1 = IBSET(HR%DETECT1,0)  ! Detected by the T_det distribution, bit 0
           Not_Init_Phase_Use_FED: IF (T > T_BEGIN .AND. ICYC > 1 .AND. USE_FED) THEN
              ! Calculate purser's fractional effective dose (FED)
@@ -8356,7 +8157,6 @@ CONTAINS
              ELSE ! From an entr line
                 HR%INTDOSE = DTSP*HUMAN_GRID(II,JJ)%FED_CO_CO2_O2 + HR%INTDOSE
              END IF
-            
              ! Smoke density vs speed
              ! Lund 2003, report 3126 (Frantzich & Nilsson)
              ! V0(K) = V0*( 1 + (BETA*K)/ALPHA ), Where [K]=1/M EXT.COEFF
@@ -8434,93 +8234,6 @@ CONTAINS
           END IF Not_Init_Phase_Use_FED
           HR%V0_FAC = SMOKE_SPEED_FAC
 
-             ! Hydrogen Sulfide Toxic Load Calculation Loop
-             ! 
-             ! Computes the toxic load for each agent for hydrogen sulfide
-             ! Boris 2014, AEGLs for Time-Varying Toxic Plumes
-             ! 
-             ! Initially, just use a simple test function to just to iterate the toxic load.
-             ! HR%Toxic_Load = HR%Toxic_Load + 0.5_EB
-             !
-             ! Toxic load requires volume fraction readings at the current time step and at the current agent's position.
-             ! Must also specify which species volume fraction is read.
-             !
-             ! Changes as of October 16, 2019
-             
-             IF (T > TPRE) THEN
-                 
-             HUMAN_GRID(i,j)%H2S_Conc = 200.0_EB ! Constant concentration for now. 
-             HGConc = HUMAN_GRID(i,j)%H2S_Conc
-             
-             END IF
-             
-          OUTER: DO k = 1, 3
-                 
-                 cmin = Brho(6,k)
-                 cmax = Brho(0,k)
-                 
-                 IF (HGConc > cmax) THEN
-                     HR%TL_Rate = 0.033_EB ! 1.0_EB/Btime(0,k) ! Btime(0) -> Max rate should be 0.033
-                 ELSE IF (HGConc < cmin) THEN
-                     HR%TL_Rate = 0.0_EB
-                 ELSE
-                     DO b = 1, 6 ! Not sure if it should be 2-7 or 1-6 OR MAYBE EVEN 2-6 EDIT: IT SHOULD BE 1-6
-                         
-                         IF (Brho(b-1,k) > HGConc .AND. HGConc > Brho(b,k)) THEN
-                         
-                         HR%TL_Rate = (1.0_EB/Btime(b,k))*((HGConc/Brho(b-1,k))**(Alpha(b,k)))
-                         HR%ToxicLoad(k) = HR%ToxicLoad(k) + HR%TL_Rate*EVAC_DT_FLOWFIELD
-                         
-                         EXIT OUTER
-                         
-                         END IF
-                                    
-                     END DO
-                     
-                 END IF
-                 
-                 HR%ToxicLoad(k) = HR%ToxicLoad(k) + HR%TL_Rate*EVAC_DT_FLOWFIELD
-                 
-             END DO OUTER
-          
-             ! Changes as of September 12, 2019
-             
-             ! Changes as of November 05, 2019 - Modified loop form
-             
-             DO k = 1, 3
-                 
-                 IF (HR%ToxicLoad(k) > 1.0_EB) THEN
-                     
-                     HR%ToxicLoad(k) = 1.0_EB
-                     
-                 END IF
-             
-             END DO
-                              
-             HR%Toxic_Load = SUM(HR%ToxicLoad)
-             
-             ! Toxic Load vs speed
-             ! Computes the velocity factor 
-             ! HR%V0_FAC = 1.0_EB --> if HR%Toxic_Load = 0.0_EB
-             ! HR%V0_FAC = 1.35_EB*(EXP(0.393_EB*HR%Toxic_Load))/SPEED --> if 0.0_EB < HR%Toxic_Load <= 1.0_EB
-             ! HR%V0_FAC = (-1.78_EB*LOG(HR%Toxic_Load)+2.063_EB)/SPEED --> if 1.0_EB < HR%Toxic_Load < 3.0_EB
-             ! HR%V0_FAC = 0.0_EB --> if HR%Toxic_Load >= 3.0_EB
-          
-           ! IF (HR%Toxic_Load < 999.0_EB) THEN
-           ! HR%Toxic_Load = 0.0_EB
-            
-                IF (HR%Toxic_Load == 0.0_EB) THEN
-                    HR%V0_FAC = 1.0_EB
-                ELSE IF (HR%Toxic_Load > 0.0_EB .AND. HR%Toxic_Load <= 1.0_EB) THEN
-                    HR%V0_FAC = 1.35_EB*(EXP(0.393_EB*HR%Toxic_Load))/HR_SPEED
-                ELSE IF (HR%Toxic_Load > 1.0_EB .AND. HR%Toxic_Load < 3.0_EB) THEN
-                    HR%V0_FAC = (-1.78_EB*LOG(HR%Toxic_Load)+2.063_EB)/HR_SPEED
-                ELSE ! IF (HR%Toxic_Load >= 3.0_EB) THEN
-                    HR%V0_FAC = 0.0_EB
-                END IF
-                
-            ! END IF
-          
           ! ========================================================
           ! Calculate persons prefered walking direction V0
           ! ========================================================
@@ -8998,7 +8711,6 @@ CONTAINS
           GROUP_LIST(0)%GROUP_Y    = 0.5_EB*(YS+YF)
           GROUP_LIST(0)%SPEED      = 1.0_EB
           GROUP_LIST(0)%INTDOSE    = 0.0_EB
-          GROUP_LIST(0)%Toxic_Load = 0.0_EB
           GROUP_LIST(0)%MAX_DIST_CENTER = 0.0_EB
           GROUP_LIST(0)%COMPLETE   = 1
        END IF
@@ -13404,7 +13116,6 @@ CONTAINS
          HR%F_Y       = 0.0_EB
          HR%F_X       = 0.0_EB
          HR%v0_fac    = 1.0_EB
-         HR%Toxic_Load = 0.0_EB
          HR%SumForces = 0.0_EB
          HR%SumForces2 = 0.0_EB
          HR%IntDose   = 0.0_EB
@@ -13881,7 +13592,6 @@ CONTAINS
             HR%F_Y        = 0.0_EB
             HR%F_X        = 0.0_EB
             HR%v0_fac     = 1.0_EB
-            HR%Toxic_Load = 0.0_EB
             HR%SumForces  = 0.0_EB
             HR%SumForces2 = 0.0_EB
             HR%IntDose    = 0.0_EB
@@ -15250,8 +14960,6 @@ CONTAINS
                 !Issue1547: Speed_ave is average speed versus v0_i (v_ave/v0_i)
                 !Issue1547: Nervousness = 1 - (v_ave/v0_i)
                 QP(NPP,NN) = REAL(MAX(1.0_EB - HR%Speed_ave,0.0_EB), FB)
-             CASE(525) ! TOXIC_LOAD, Toxic Load, no units
-                 QP(NPP,NN)=REAL(HR%Toxic_Load, FB) ! Part of OPERATION HYDRA Mk III.
              END SELECT
           END DO
 
